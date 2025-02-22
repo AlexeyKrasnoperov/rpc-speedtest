@@ -1,0 +1,62 @@
+:root {
+    --bg-color: #ffffff;
+    --text-color: #213547;
+    --btn-bg: #f9f9f9;
+    --table-bg: #ffffff;
+    --table-text: #213547;
+    --table-header-bg: #007bff;
+    --table-header-text: white;
+    --table-border: #ddd;
+    --table-row-alt: #f8f9fa;
+}
+
+[data-theme="dark"] {
+    --bg-color: #242424;
+    --text-color: rgba(255, 255, 255, 0.87);
+    --btn-bg: #1a1a1a;
+    --table-bg: #1e1e1e;
+    --table-text: #f8f9fa;
+    --table-header-bg: #0056b3;
+    --table-header-text: white;
+    --table-border: #444;
+    --table-row-alt: #2a2a2a;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+button {
+    background-color: var(--btn-bg);
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 0.6em 1.2em;
+    font-size: 1em;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.25s, background-color 0.25s, color 0.25s;
+}
+
+button:hover {
+    border-color: #646cff;
+}
+
+.theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    color: inherit;
+}

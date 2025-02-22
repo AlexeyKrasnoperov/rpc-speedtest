@@ -1,35 +1,42 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import { useSpeedTest } from "./hooks/useSpeedTest";
+import { SpeedTestTable } from "./components/SpeedTestTable";
+import "./styles/App.css";
 
-function App() {
-  const [count, setCount] = useState(0)
+const rpcUrls = [
+  "https://rpc.ankr.com/filecoin"
+];
+
+const rpcMethods = [
+  "eth_blockNumber",
+  "eth_gasPrice"
+];
+
+const App = () => {
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  });
+
+  const { data, loading } = useSpeedTest(rpcUrls, rpcMethods);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(theme === "light" ? "dark" : "light");
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <div className="appContainer">
+      <button className="theme-toggle" onClick={toggleTheme}>
+        {theme === "light" ? "🌙" : "☀️"}
+      </button>
+      <h1 className="title">RPC Speed Test</h1>
+      <SpeedTestTable rpcUrls={rpcUrls} rpcMethods={rpcMethods} data={data} loading={loading} />
+    </div>
+  );
+};
 
-export default App
+export default App;
