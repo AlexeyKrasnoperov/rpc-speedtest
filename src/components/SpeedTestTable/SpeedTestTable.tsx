@@ -1,37 +1,39 @@
 import styles from "./SpeedTestTable.module.css";
+import { RpcData } from "../../hooks/useSpeedTest";
 
 interface SpeedTestTableProps {
   rpcUrls: string[];
   rpcMethods: string[];
-  data: Record<string, Record<string, { time: number; error: boolean; errorMessage: string }>>;
-  loading: boolean;
+  data: RpcData[];
 }
 
-export const SpeedTestTable: React.FC<SpeedTestTableProps> = ({ rpcUrls, rpcMethods, data, loading }) => {
+export const SpeedTestTable: React.FC<SpeedTestTableProps> = ({ rpcUrls, rpcMethods, data }) => {
   return (
     <div className={styles.speedTestTable}>
       <table>
         <thead>
           <tr>
             <th>Method</th>
-            {rpcUrls.map((rpcUrl, index) => (
-              <th key={index}>{new URL(rpcUrl).hostname}</th>
+            {rpcUrls.map((rpcUrl) => (
+              <th key={rpcUrl} title={rpcUrl}>{new URL(rpcUrl).hostname}</th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rpcMethods.map((method, rowIndex) => (
-            <tr key={rowIndex}>
+          {rpcMethods.map((method) => (
+            <tr key={method}>
               <td>{method}</td>
-              {rpcUrls.map((rpcUrl, colIndex) => {
-                const cellData = data[rpcUrl]?.[method] || {};
+              {rpcUrls.map((rpcUrl) => {
+                const entry = data.find((d) => d.rpcUrl === rpcUrl);
+                const response = entry?.responses.find((r) => r.method === method);
+
                 return (
-                  <td key={colIndex} className={cellData.error ? styles.error : styles.success}>
-                    {loading || cellData.time === undefined
-                      ? "..."
-                      : cellData.error
-                      ? `❌ ${cellData.errorMessage}`
-                      : `${cellData.time.toFixed(2)} ms`}
+                  <td key={rpcUrl} style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                    {response?.time === undefined
+                      ? "⏳"
+                      : response.error
+                      ? `❌ ${response.errorMessage} (${response.time.toFixed(2)} ms)`
+                      : `${response.time.toFixed(2)} ms`}
                   </td>
                 );
               })}
