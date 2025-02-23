@@ -62,8 +62,7 @@ export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
     const MAX_RETRIES = 5;
 
     useEffect(() => {
-        if (hasFetched.current) return;
-        hasFetched.current = true;
+        hasFetched.current = false;
 
         setData(
             rpcUrls.map((url) => ({
@@ -128,6 +127,8 @@ export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
         };
 
         const fetchData = async () => {
+            hasFetched.current = true;
+
             const allRequests: Promise<void>[] = [];
 
             rpcUrls.forEach((rpcUrl) => {

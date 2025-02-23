@@ -3,7 +3,7 @@ import { useSpeedTest } from "./hooks/useSpeedTest";
 import { SpeedTestTable } from "./components/SpeedTestTable";
 import "./styles/App.css";
 
-const rpcUrls = [
+const defaultRpcUrls = [
   "https://rpc.ankr.com/filecoin",
   "https://filecoin.chainup.net/rpc/v1",
   "https://api.node.glif.io",
@@ -56,13 +56,14 @@ const rpcMethods = [
 
   "net_version",
   "net_listening",
-
-  "web3_clientVersion",
+  "web3_clientVersion"
 ];
 
 const App = () => {
-  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
-  
+  const [theme, setTheme] = useState(() =>
+    localStorage.getItem("theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+  );
+
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("theme", theme);
@@ -70,7 +71,32 @@ const App = () => {
 
   const toggleTheme = () => setTheme((prev) => (prev === "light" ? "dark" : "light"));
 
+  const [customRpcEnabled, setCustomRpcEnabled] = useState(false);
+  const [customRpcUrl, setCustomRpcUrl] = useState("");
+  const [rpcUrls, setRpcUrls] = useState(defaultRpcUrls);
+
   const { data } = useSpeedTest(rpcUrls, rpcMethods);
+
+  const normalizeUrl = (url: string) => {
+    url = url.trim();
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      url = "http://" + url; // Default to HTTP if no protocol is provided
+    }
+    return url;
+  };
+
+  const handleAddCustomRpc = () => {
+    const formattedUrl = normalizeUrl(customRpcUrl);
+    try {
+      new URL(formattedUrl); // Validate URL format
+      if (!rpcUrls.includes(formattedUrl)) {
+        setRpcUrls((prev) => [...prev, formattedUrl]);
+      }
+      setCustomRpcUrl(""); // Clear input after adding
+    } catch (e) {
+      alert("Invalid RPC URL"); // Prevents app from crashing
+    }
+  };
 
   return (
     <div className="appContainer">
@@ -78,6 +104,30 @@ const App = () => {
         {theme === "light" ? "🌙" : "☀️"}
       </button>
       <h1 className="title">RPC Speed Test</h1>
+
+      <div className="custom-node-toggle">
+        <label>
+          <input
+            type="checkbox"
+            checked={customRpcEnabled}
+            onChange={() => setCustomRpcEnabled((prev) => !prev)}
+          />
+          Add Custom Node
+        </label>
+      </div>
+
+      {customRpcEnabled && (
+        <div className="custom-node-input">
+          <input
+            type="text"
+            placeholder="Enter RPC URL"
+            value={customRpcUrl}
+            onChange={(e) => setCustomRpcUrl(e.target.value)}
+          />
+          <button onClick={handleAddCustomRpc}>Add</button>
+        </div>
+      )}
+
       <SpeedTestTable rpcUrls={rpcUrls} rpcMethods={rpcMethods} data={data} />
     </div>
   );
