@@ -14,24 +14,31 @@ export const SpeedTestTable: React.FC<SpeedTestTableProps> = ({ rpcUrls, rpcMeth
         <thead>
           <tr>
             <th>Method</th>
-            {rpcUrls.map((rpcUrl, index) => (
-              <th key={index}>{new URL(rpcUrl).hostname}</th>
+            {data.map((entry) => (
+              <th key={entry.rpcUrl} title={entry.rpcUrl}>
+                {new URL(entry.rpcUrl).hostname}
+              </th>
             ))}
           </tr>
         </thead>
+
         <tbody>
-          {rpcMethods.map((method, rowIndex) => (
-            <tr key={rowIndex}>
+          {rpcMethods.map((method) => (
+            <tr key={method}>
               <td>{method}</td>
-              {rpcUrls.map((rpcUrl, colIndex) => {
-                const cellData = data[rpcUrl]?.[method] || {};
+              {data.map((entry) => {
+                const response = entry.responses.find((r) => r.method === method);
                 return (
-                  <td key={colIndex} className={cellData.error ? styles.error : styles.success}>
-                    {loading || cellData.time === undefined
-                      ? "..."
-                      : cellData.error
-                      ? `❌ ${cellData.errorMessage}`
-                      : `${cellData.time.toFixed(2)} ms`}
+                  <td key={entry.rpcUrl} style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", overflowY: "auto" }}>
+                    {response
+                      ? response.error
+                        ? (
+                          <>
+                            ❌ {response.errorMessage} ({response.time.toFixed(2)} ms)
+                          </>
+                        )
+                        : `${response.time.toFixed(2)} ms`
+                      : "⏳"}
                   </td>
                 );
               })}
