@@ -83,7 +83,7 @@ export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
             for (const rpcUrl of rpcUrls) {
                 for (const method of rpcMethods) {
                     const params = methodParams[method] || [];
-                    const requestData = { jsonrpc: "2.0", method, params, id: Math.random() };
+                    const requestData = { jsonrpc: "2.0", method, params, id: 1 };
 
                     const startTime = performance.now();
                     try {
