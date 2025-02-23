@@ -61,20 +61,16 @@ const rpcMethods = [
 ];
 
 const App = () => {
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-  });
-
-  const { data, loading } = useSpeedTest(rpcUrls, rpcMethods);
-
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+  
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
-  };
+  const toggleTheme = () => setTheme((prev) => (prev === "light" ? "dark" : "light"));
+
+  const { data, loading } = useSpeedTest(rpcUrls, rpcMethods);
 
   return (
     <div className="appContainer">

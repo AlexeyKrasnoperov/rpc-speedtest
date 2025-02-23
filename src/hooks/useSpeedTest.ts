@@ -71,70 +71,87 @@ export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
     const [data, setData] = useState<RpcData[]>([]);
     const [loading, setLoading] = useState(true);
     const hasFetched = useRef(false);
+    const MAX_RETRIES = 5;
 
     useEffect(() => {
         if (hasFetched.current) return;
         hasFetched.current = true;
-
-        setData(rpcUrls.map((url) => ({ rpcUrl: url, responses: [] })));
         setLoading(true);
 
-        const fetchData = async () => {
-            for (const rpcUrl of rpcUrls) {
-                for (const method of rpcMethods) {
-                    const params = methodParams[method] || [];
-                    const requestData = { jsonrpc: "2.0", method, params, id: 1 };
+        setData(
+            rpcUrls.map((url) => ({
+                rpcUrl: url,
+                responses: rpcMethods.map((method) => ({
+                    method,
+                    time: undefined,
+                    error: false,
+                    errorMessage: "",
+                })),
+            }))
+        );
 
-                    const startTime = performance.now();
-                    try {
-                        const response = await fetch(rpcUrl, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(requestData),
-                        });
-                        const endTime = performance.now();
-                        const json = await response.json();
+        const fetchRpcMethod = async (rpcUrl: string, method: string, attempt = 1): Promise<RpcResponse> => {
+            const params = methodParams[method] || [];
+            const requestData = { jsonrpc: "2.0", method, params, id: 1 };
+            const startTime = performance.now();
 
-                        const responseEntry: RpcResponse = {
-                            method,
-                            time: endTime - startTime,
-                            result: json.result || null,
-                            error: !!json.error,
-                            errorMessage: json.error?.message || `HTTP ${response.status}`,
-                            fullError: json.error || null,
-                        };
-                        console.log(responseEntry);
+            try {
+                const response = await fetch(rpcUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(requestData),
+                });
+                const endTime = performance.now();
 
-                        setData((prevData) =>
-                            prevData.map((entry) =>
-                                entry.rpcUrl === rpcUrl
-                                    ? { ...entry, responses: [...entry.responses, responseEntry] }
-                                    : entry
-                            )
-                        );
-                    } catch (error: any) {
-                        setData((prevData) =>
-                            prevData.map((entry) =>
-                                entry.rpcUrl === rpcUrl
-                                    ? {
-                                        ...entry,
-                                        responses: [
-                                            ...entry.responses,
-                                            {
-                                                method,
-                                                time: performance.now() - startTime,
-                                                error: true,
-                                                errorMessage: error.message,
-                                                fullError: error,
-                                            },
-                                        ],
-                                    }
-                                    : entry
-                            )
-                        );
+                if (!response.ok) {
+                    if (response.status === 429 && attempt <= MAX_RETRIES) {
+                        console.warn(`⚠️ ${rpcUrl} -> ${method}: 429 Too Many Requests. Retrying in 1s (Attempt ${attempt})`);
+                        await new Promise((resolve) => setTimeout(resolve, 1000));
+                        return fetchRpcMethod(rpcUrl, method, attempt + 1);
                     }
+                    throw new Error(`HTTP ${response.status} ${response.statusText}`);
                 }
+
+                const json = await response.json();
+
+                return {
+                    method,
+                    time: endTime - startTime,
+                    result: json.result || null,
+                    error: !!json.error,
+                    errorMessage: json.error?.message || "",
+                    fullError: json.error || null,
+                };
+            } catch (error: any) {
+                return {
+                    method,
+                    time: performance.now() - startTime,
+                    error: true,
+                    errorMessage: error.message.includes("Unexpected token")
+                        ? "Invalid JSON Response"
+                        : error.message,
+                    fullError: error,
+                };
             }
+        };
+
+        const fetchData = async () => {
+            await Promise.all(
+                rpcUrls.map(async (rpcUrl) => {
+                    const responses: RpcResponse[] = await Promise.all(
+                        rpcMethods.map((method) => fetchRpcMethod(rpcUrl, method))
+                    );
+
+                    setData((prevData) =>
+                        prevData.map((entry) =>
+                            entry.rpcUrl === rpcUrl
+                                ? { ...entry, responses }
+                                : entry
+                        )
+                    );
+                })
+            );
+
             setLoading(false);
         };
 
