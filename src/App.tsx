@@ -18,9 +18,9 @@ const rpcMethods = [
   "eth_getBlockByHash",
   "eth_getBlockTransactionCountByNumber",
   "eth_getBlockTransactionCountByHash",
-  "eth_getTransactionByHash", // -TIMEOUT
+  "eth_getTransactionByHash",
   "eth_getTransactionCount",
-  "eth_getTransactionReceipt", // -TIMEOUT
+  "eth_getTransactionReceipt",
   "eth_getBlockReceipts",
   "eth_getTransactionByBlockHashAndIndex",
   "eth_getTransactionByBlockNumberAndIndex",
@@ -42,7 +42,7 @@ const rpcMethods = [
   "eth_newPendingTransactionFilter",
   // "eth_uninstallFilter", // TODO: we have to create a filter first and then call it sequentially
   // "eth_subscribe", // - connection doesn"t support callbacks
-  // "eth_unsubscribe", // TODO: we have to subsribe first
+  // "eth_unsubscribe", // TODO: we have to subscribe first
 
   "eth_call",
   "eth_getLogs",
@@ -51,7 +51,7 @@ const rpcMethods = [
 
   "trace_block",
   "trace_replayBlockTransactions",
-  "trace_transaction", // - TIMEOUT
+  "trace_transaction",
   "trace_filter",
 
   "net_version",
@@ -70,7 +70,7 @@ const App = () => {
 
   const toggleTheme = () => setTheme((prev) => (prev === "light" ? "dark" : "light"));
 
-  const { data, loading } = useSpeedTest(rpcUrls, rpcMethods);
+  const { data } = useSpeedTest(rpcUrls, rpcMethods);
 
   return (
     <div className="appContainer">
@@ -78,7 +78,7 @@ const App = () => {
         {theme === "light" ? "🌙" : "☀️"}
       </button>
       <h1 className="title">RPC Speed Test</h1>
-      <SpeedTestTable rpcUrls={rpcUrls} rpcMethods={rpcMethods} data={data} loading={loading} />
+      <SpeedTestTable rpcUrls={rpcUrls} rpcMethods={rpcMethods} data={data} />
     </div>
   );
 };

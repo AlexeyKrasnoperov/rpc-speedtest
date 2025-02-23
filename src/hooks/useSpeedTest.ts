@@ -9,7 +9,7 @@ interface RpcResponse {
     fullError?: any;
 }
 
-interface RpcData {
+export interface RpcData {
     rpcUrl: string;
     responses: RpcResponse[];
 }
@@ -57,7 +57,6 @@ const methodParams: Record<string, any[]> = {
 
 export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
     const [data, setData] = useState<RpcData[]>([]);
-    const [loading, setLoading] = useState(true);
     const hasFetched = useRef(false);
     const MAX_RETRIES = 5;
 
@@ -65,8 +64,6 @@ export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
         if (hasFetched.current) return;
         hasFetched.current = true;
         
-        setLoading(true);
-
         setData(
             rpcUrls.map((url) => ({
                 rpcUrl: url,
@@ -154,11 +151,10 @@ export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
             });
 
             await Promise.allSettled(allRequests);
-            setLoading(false);
         };
 
         fetchData();
     }, [rpcUrls, rpcMethods]);
 
-    return { data, loading };
+    return { data };
 };

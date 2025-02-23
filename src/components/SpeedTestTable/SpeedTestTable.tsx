@@ -1,25 +1,13 @@
 import styles from "./SpeedTestTable.module.css";
-
-interface RpcResponse {
-  method: string;
-  time?: number;
-  error: boolean;
-  errorMessage?: string;
-}
-
-interface RpcData {
-  rpcUrl: string;
-  responses: RpcResponse[];
-}
+import { RpcData } from "../../hooks/useSpeedTest";
 
 interface SpeedTestTableProps {
   rpcUrls: string[];
   rpcMethods: string[];
   data: RpcData[];
-  loading: boolean;
 }
 
-export const SpeedTestTable: React.FC<SpeedTestTableProps> = ({ rpcUrls, rpcMethods, data, loading }) => {
+export const SpeedTestTable: React.FC<SpeedTestTableProps> = ({ rpcUrls, rpcMethods, data }) => {
   return (
     <div className={styles.speedTestTable}>
       <table>
