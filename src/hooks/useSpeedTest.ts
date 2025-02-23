@@ -11,6 +11,7 @@ interface RpcResponse {
 
 export interface RpcData {
     rpcUrl: string;
+    web3ClientVersion?: string;
     responses: RpcResponse[];
 }
 
@@ -63,10 +64,11 @@ export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
     useEffect(() => {
         if (hasFetched.current) return;
         hasFetched.current = true;
-        
+
         setData(
             rpcUrls.map((url) => ({
                 rpcUrl: url,
+                web3Version: "⏳",
                 responses: rpcMethods.map((method) => ({
                     method,
                     time: undefined,
@@ -129,18 +131,27 @@ export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
             const allRequests: Promise<void>[] = [];
 
             rpcUrls.forEach((rpcUrl) => {
+                const web3VersionRequest = fetchRpcMethod(rpcUrl, "web3_clientVersion").then((response) => {
+                    setData((prevData) =>
+                        prevData.map((entry) =>
+                            entry.rpcUrl === rpcUrl ? { ...entry, web3ClientVersion: response.result || "Unknown" } : entry
+                        )
+                    );
+                });
+
+                allRequests.push(web3VersionRequest);
+
                 rpcMethods.forEach((method) => {
                     const request = fetchRpcMethod(rpcUrl, method).then((response) => {
-                        console.log(rpcUrl, response);
                         setData((prevData) =>
                             prevData.map((entry) =>
                                 entry.rpcUrl === rpcUrl
                                     ? {
-                                          ...entry,
-                                          responses: entry.responses.map((r) =>
-                                              r.method === method ? response : r
-                                          )
-                                      }
+                                        ...entry,
+                                        responses: entry.responses.map((r) =>
+                                            r.method === method ? response : r
+                                        )
+                                    }
                                     : entry
                             )
                         );
