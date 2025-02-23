@@ -4,11 +4,11 @@ import { SpeedTestTable } from "./components/SpeedTestTable";
 import "./styles/App.css";
 
 const defaultRpcUrls = [
-  "https://rpc.ankr.com/filecoin",
-  "https://filecoin.chainup.net/rpc/v1",
-  "https://api.node.glif.io",
-  "https://filfox.info/rpc/v1",
-  "https://filecoin.drpc.org"
+  { url: "https://rpc.ankr.com/filecoin", name: "Ankr" },
+  { url: "https://filecoin.chainup.net/rpc/v1", name: "ChainUp" },
+  { url: "https://api.node.glif.io", name: "Glif" },
+  { url: "https://filfox.info/rpc/v1", name: "Filfox" },
+  { url: "https://filecoin.drpc.org", name: "DRPC" }
 ];
 
 const rpcMethods = [
@@ -60,75 +60,108 @@ const rpcMethods = [
 ];
 
 const App = () => {
-  const [theme, setTheme] = useState(() =>
-    localStorage.getItem("theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-  );
+  const storedCustomRpcs = JSON.parse(localStorage.getItem("customRpcs") || "[]");
+  const [selectedRpcUrls, setSelectedRpcUrls] = useState<string[]>([]);
+  const [customRpcUrls, setCustomRpcUrls] = useState<string[]>(storedCustomRpcs);
+  const [newCustomRpc, setNewCustomRpc] = useState("");
+
+  const { data } = useSpeedTest(selectedRpcUrls, rpcMethods);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+    localStorage.setItem("customRpcs", JSON.stringify(customRpcUrls));
+  }, [customRpcUrls]);
 
-  const toggleTheme = () => setTheme((prev) => (prev === "light" ? "dark" : "light"));
-
-  const [customRpcEnabled, setCustomRpcEnabled] = useState(false);
-  const [customRpcUrl, setCustomRpcUrl] = useState("");
-  const [rpcUrls, setRpcUrls] = useState(defaultRpcUrls);
-
-  const { data } = useSpeedTest(rpcUrls, rpcMethods);
+  const toggleRpc = (url: string) => {
+    setSelectedRpcUrls((prev) =>
+      prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url]
+    );
+  };
 
   const normalizeUrl = (url: string) => {
     url = url.trim();
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
-      url = "http://" + url; // Default to HTTP if no protocol is provided
+    if (!/^https?:\/\//.test(url)) {
+      url = `http://${url}`;
     }
     return url;
   };
 
-  const handleAddCustomRpc = () => {
-    const formattedUrl = normalizeUrl(customRpcUrl);
-    try {
-      new URL(formattedUrl); // Validate URL format
-      if (!rpcUrls.includes(formattedUrl)) {
-        setRpcUrls((prev) => [...prev, formattedUrl]);
-      }
-      setCustomRpcUrl(""); // Clear input after adding
-    } catch (e) {
-      alert("Invalid RPC URL"); // Prevents app from crashing
+  const isValidUrl = (url: string) => {
+    if (/^(https?:\/\/)?(localhost|\d{1,3}(\.\d{1,3}){3}):\d+$/.test(url)) {
+      return true;
     }
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const addCustomRpc = () => {
+    let formattedUrl = normalizeUrl(newCustomRpc);
+    if (!isValidUrl(formattedUrl)) {
+      alert("Invalid RPC URL");
+      return;
+    }
+    if (!customRpcUrls.includes(formattedUrl) && !defaultRpcUrls.some((n) => n.url === formattedUrl)) {
+      setCustomRpcUrls((prev) => [...prev, formattedUrl]);
+      setNewCustomRpc("");
+    }
+  };
+
+  const removeCustomRpc = (url: string) => {
+    setCustomRpcUrls((prev) => prev.filter((u) => u !== url));
+    setSelectedRpcUrls((prev) => prev.filter((u) => u !== url));
   };
 
   return (
     <div className="appContainer">
-      <button className="theme-toggle" onClick={toggleTheme}>
-        {theme === "light" ? "🌙" : "☀️"}
-      </button>
       <h1 className="title">RPC Speed Test</h1>
 
-      <div className="custom-node-toggle">
-        <label>
-          <input
-            type="checkbox"
-            checked={customRpcEnabled}
-            onChange={() => setCustomRpcEnabled((prev) => !prev)}
-          />
-          Add Custom Node
-        </label>
-      </div>
+      <div className="rpc-selection">
+        <h3>Select Nodes</h3>
+        {defaultRpcUrls.map(({ url, name }) => (
+          <label key={url} className="rpc-option">
+            <input
+              type="checkbox"
+              checked={selectedRpcUrls.includes(url)}
+              onChange={() => toggleRpc(url)}
+            />
+            {name}
+          </label>
+        ))}
 
-      {customRpcEnabled && (
-        <div className="custom-node-input">
+        <h3>Custom Nodes</h3>
+        {customRpcUrls.map((url) => (
+          <div key={url} className="custom-rpc-item">
+            <label className="rpc-option">
+              <input
+                type="checkbox"
+                checked={selectedRpcUrls.includes(url)}
+                onChange={() => toggleRpc(url)}
+              />
+              {url}
+            </label>
+            <button className="remove-btn" onClick={() => removeCustomRpc(url)}>❌</button>
+          </div>
+        ))}
+
+        <div className="add-custom">
           <input
             type="text"
-            placeholder="Enter RPC URL"
-            value={customRpcUrl}
-            onChange={(e) => setCustomRpcUrl(e.target.value)}
+            placeholder="Enter custom RPC"
+            value={newCustomRpc}
+            onChange={(e) => setNewCustomRpc(e.target.value)}
           />
-          <button onClick={handleAddCustomRpc}>Add</button>
+          <button onClick={addCustomRpc}>➕</button>
         </div>
-      )}
+      </div>
 
-      <SpeedTestTable rpcUrls={rpcUrls} rpcMethods={rpcMethods} data={data} />
+      {selectedRpcUrls.length > 0 ? (
+        <SpeedTestTable rpcUrls={selectedRpcUrls} rpcMethods={rpcMethods} data={data} />
+      ) : (
+        <p className="no-nodes">No nodes selected</p>
+      )}
     </div>
   );
 };

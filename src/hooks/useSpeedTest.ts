@@ -58,24 +58,40 @@ const methodParams: Record<string, any[]> = {
 
 export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
     const [data, setData] = useState<RpcData[]>([]);
-    const hasFetched = useRef(false);
+    const initialized = useRef(false);
+    const prevRpcUrls = useRef<string[]>([]);
     const MAX_RETRIES = 5;
 
     useEffect(() => {
-        hasFetched.current = false;
+        if (!initialized.current) {
+            initialized.current = true;
+            prevRpcUrls.current = rpcUrls;
+        }
 
-        setData(
-            rpcUrls.map((url) => ({
-                rpcUrl: url,
-                web3Version: "⏳",
-                responses: rpcMethods.map((method) => ({
-                    method,
-                    time: undefined,
-                    error: false,
-                    errorMessage: ""
-                }))
-            }))
-        );
+        const newRpcUrls = rpcUrls.filter((url) => !prevRpcUrls.current.includes(url));
+        const removedRpcUrls = prevRpcUrls.current.filter((url) => !rpcUrls.includes(url));
+        prevRpcUrls.current = rpcUrls;
+
+        if (newRpcUrls.length === 0 && removedRpcUrls.length === 0) return;
+
+        setData((prevData) => {
+            const updatedData = prevData.filter((entry) => !removedRpcUrls.includes(entry.rpcUrl));
+
+            newRpcUrls.forEach((url) => {
+                updatedData.push({
+                    rpcUrl: url,
+                    web3ClientVersion: "⏳",
+                    responses: rpcMethods.map((method) => ({
+                        method,
+                        time: undefined,
+                        error: false,
+                        errorMessage: ""
+                    }))
+                });
+            });
+
+            return updatedData;
+        });
 
         const fetchRpcMethod = async (rpcUrl: string, method: string, attempt = 1): Promise<RpcResponse> => {
             const params = methodParams[method] || [];
@@ -93,7 +109,6 @@ export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
                     if (response.status === 429 && attempt <= MAX_RETRIES) {
                         const retryAfter = response.headers.get("Retry-After");
                         const delay = retryAfter ? parseInt(retryAfter, 10) * 1000 : 2000;
-                        console.warn(`⚠️ ${rpcUrl} -> ${method}: 429 Too Many Requests. Retrying in ${delay / 1000}s (Attempt ${attempt})`);
                         await new Promise((resolve) => setTimeout(resolve, delay));
                         return fetchRpcMethod(rpcUrl, method, attempt + 1);
                     }
@@ -126,12 +141,10 @@ export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
             }
         };
 
-        const fetchData = async () => {
-            hasFetched.current = true;
-
+        const fetchData = async (urls: string[]) => {
             const allRequests: Promise<void>[] = [];
 
-            rpcUrls.forEach((rpcUrl) => {
+            urls.forEach((rpcUrl) => {
                 const web3VersionRequest = fetchRpcMethod(rpcUrl, "web3_clientVersion").then((response) => {
                     setData((prevData) =>
                         prevData.map((entry) =>
@@ -165,8 +178,8 @@ export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
             await Promise.allSettled(allRequests);
         };
 
-        fetchData();
-    }, [rpcUrls, rpcMethods]);
+        fetchData(newRpcUrls);
+    }, [rpcUrls]);
 
     return { data };
 };
