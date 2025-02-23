@@ -15,7 +15,13 @@ export const SpeedTestTable: React.FC<SpeedTestTableProps> = ({ rpcUrls, rpcMeth
           <tr>
             <th>Method</th>
             {rpcUrls.map((rpcUrl) => (
-              <th key={rpcUrl} title={rpcUrl}>{new URL(rpcUrl).hostname}</th>
+              <th key={rpcUrl} title={rpcUrl}>
+                {new URL(rpcUrl).hostname}
+                <br />
+                <span style={{ fontSize: "0.8em", fontWeight: "normal" }}>
+                  {data.find((d) => d.rpcUrl === rpcUrl)?.web3ClientVersion || "⏳"}
+                </span>
+              </th>
             ))}
           </tr>
         </thead>
@@ -32,8 +38,8 @@ export const SpeedTestTable: React.FC<SpeedTestTableProps> = ({ rpcUrls, rpcMeth
                     {response?.time === undefined
                       ? "⏳"
                       : response.error
-                      ? `❌ ${response.errorMessage} (${response.time.toFixed(2)} ms)`
-                      : `${response.time.toFixed(2)} ms`}
+                        ? `❌ ${response.errorMessage} (${response.time.toFixed(2)} ms)`
+                        : `${response.time.toFixed(2)} ms`}
                   </td>
                 );
               })}
