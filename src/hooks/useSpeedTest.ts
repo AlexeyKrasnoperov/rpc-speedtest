@@ -17,7 +17,7 @@ export interface RpcData {
 
 const BLOCK_NUMBER = "0x483aa6";
 const BLOCK_HASH = "0x45c05a533885d5f76293f9f0d190daa8aba0e056144cd30eabf4c35997535b13";
-const TRANSACTION_HASH = "0xdd60a1dff2e198037af332a9e19aa0e7adc7f29c0839f20b580ac82c2af7b660";
+const TRANSACTION_HASH = "0x39ca847f97606c77da928ba8e6139a92e7819a0038c48057d502b7ba8e40c4e9";
 
 const methodParams: Record<string, any[]> = {
     "eth_accounts": [],
