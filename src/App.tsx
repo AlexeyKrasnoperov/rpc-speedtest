@@ -8,7 +8,8 @@ const defaultRpcUrls = [
   { url: "https://filecoin.chainup.net/rpc/v1", name: "ChainUp" },
   { url: "https://api.node.glif.io", name: "Glif" },
   { url: "https://filfox.info/rpc/v1", name: "Filfox" },
-  { url: "https://filecoin.drpc.org", name: "DRPC" }
+  { url: "https://filecoin.drpc.org", name: "DRPC" },
+  { url: "https://rpcnode-mainnet.chainsafe-fil.io/rpc/v0", name: "ChainSafe"}
 ];
 
 const rpcMethods = [
