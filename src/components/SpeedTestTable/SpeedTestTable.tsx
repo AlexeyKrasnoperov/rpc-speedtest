@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from "@mui/material";
 import { RpcData } from "../../hooks/useSpeedTest";
 
@@ -38,10 +37,6 @@ export const SpeedTestTable: React.FC<SpeedTestTableProps> = ({ rpcUrls, rpcMeth
       ? `${times[mid].toFixed(2)} ms`
       : `${((times[mid - 1] + times[mid]) / 2).toFixed(2)} ms`;
   };
-
-  useEffect(() => {
-    console.log("Updated data:", data);
-  }, [data]);
 
   return (
     <TableContainer component={Paper} sx={{ mt: 3, maxWidth: "100%", overflowX: "auto" }}>
