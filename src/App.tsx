@@ -1,18 +1,10 @@
 import { useEffect, useState } from "react";
-import { useSpeedTest } from "./hooks/useSpeedTest";
 import { SpeedTestTable } from "./components/SpeedTestTable";
-import {
-  Container,
-  Typography,
-  TextField,
-  Button,
-  Paper,
-  Box,
-  Chip,
-  Stack,
-} from "@mui/material";
+import { Container, Typography, TextField, Button, Paper, Box, Chip, Stack } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
 import "./styles/App.css";
+import { useSpeedTest } from "./hooks/useSpeedTest";
 
 const defaultRpcUrls = [
   { url: "https://rpc.ankr.com/filecoin", name: "Ankr" },
@@ -93,37 +85,20 @@ const App = () => {
     );
   };
 
-  const normalizeUrl = (url: string) => {
-    url = url.trim();
-    if (!/^https?:\/\//.test(url)) {
-      url = `http://${url}`;
-    }
-    return url;
-  };
-
-  const isValidUrl = (url: string) => {
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
   const addCustomRpc = () => {
-    let formattedUrl = normalizeUrl(newCustomRpc);
-    if (!isValidUrl(formattedUrl)) {
-      alert("Invalid RPC URL");
-      return;
-    }
-    if (!customRpcUrls.includes(formattedUrl) && !defaultRpcUrls.some((n) => n.url === formattedUrl)) {
-      setCustomRpcUrls((prev) => [...prev, formattedUrl]);
+    if (!customRpcUrls.includes(newCustomRpc) && !defaultRpcUrls.some((n) => n.url === newCustomRpc)) {
+      setCustomRpcUrls((prev) => [...prev, newCustomRpc]);
       setNewCustomRpc("");
     }
   };
 
+  const removeCustomRpc = (url: string) => {
+    setCustomRpcUrls((prev) => prev.filter((u) => u !== url));
+    setSelectedRpcUrls((prev) => prev.filter((u) => u !== url));
+  };
+
   return (
-    <Container maxWidth="xl" sx={{ mt: 4 }}>
+    <Container maxWidth="md" sx={{ mt: 4 }}>
       <Typography variant="h4" gutterBottom>
         RPC Speed Test
       </Typography>
@@ -136,7 +111,7 @@ const App = () => {
               key={url}
               label={name}
               clickable
-              color={selectedRpcUrls.includes(url) ? "primary" : "default"}
+              color={selectedRpcUrls.includes(url) ? "success" : "default"}
               onClick={() => toggleRpc(url)}
             />
           ))}
@@ -153,6 +128,8 @@ const App = () => {
               clickable
               color={selectedRpcUrls.includes(url) ? "primary" : "default"}
               onClick={() => toggleRpc(url)}
+              onDelete={() => removeCustomRpc(url)}
+              deleteIcon={<DeleteIcon />}
             />
           ))}
         </Stack>
