@@ -43,18 +43,28 @@ const rpcMethods = [
   "eth_feeHistory",
   "eth_protocolVersion",
   "eth_maxPriorityFeePerGas",
+  // "eth_sendRawTransaction", // TODO: construct transaction or skip it completely?
   "eth_estimateGas",
+
+  // "eth_getFilterChanges", // TODO: we have to create a filter first and then call it sequentially
+  // "eth_getFilterLogs", // TODO: we have to create a filter first and then call it sequentially
   "eth_newFilter",
   "eth_newBlockFilter",
   "eth_newPendingTransactionFilter",
+  // "eth_uninstallFilter", // TODO: we have to create a filter first and then call it sequentially
+  // "eth_subscribe", // - connection doesn"t support callbacks
+  // "eth_unsubscribe", // TODO: we have to subscribe first
+
   "eth_call",
   "eth_getLogs",
   "eth_getBalance",
   "eth_gasPrice",
+
   "trace_block",
   "trace_replayBlockTransactions",
   "trace_transaction",
   "trace_filter",
+  
   "net_version",
   "net_listening",
   "web3_clientVersion",
