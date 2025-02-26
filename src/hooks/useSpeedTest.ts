@@ -58,21 +58,105 @@ const methodParams: Record<string, any[]> = {
 
 export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
     const [data, setData] = useState<RpcData[]>([]);
-    const initialized = useRef(false);
     const prevRpcUrls = useRef<string[]>([]);
+    const initialized = useRef(false);
     const MAX_RETRIES = 5;
 
-    useEffect(() => {
-        if (!initialized.current) {
-            initialized.current = true;
-            prevRpcUrls.current = rpcUrls;
+    const fetchRpcMethod = async (rpcUrl: string, method: string, attempt = 1): Promise<RpcResponse> => {
+        const params = methodParams[method] || [];
+        const requestData = { jsonrpc: "2.0", method, params, id: 1 };
+        const startTime = performance.now();
+
+        try {
+            const response = await fetch(rpcUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestData)
+            });
+
+            if (!response.ok) {
+                if (response.status === 429 && attempt <= MAX_RETRIES) {
+                    const retryAfter = response.headers.get("Retry-After");
+                    const delay = retryAfter ? parseInt(retryAfter, 10) * 1000 : 2000;
+                    await new Promise((resolve) => setTimeout(resolve, delay));
+                    return fetchRpcMethod(rpcUrl, method, attempt + 1);
+                }
+                throw new Error(`HTTP ${response.status} ${response.statusText}`);
+            }
+
+            const json = await response.json();
+
+            return {
+                method,
+                time: performance.now() - startTime,
+                result: json.result || null,
+                error: !!json.error,
+                errorMessage: json.error?.message || "",
+                fullError: json.error || null
+            };
+        } catch (error: any) {
+            return {
+                method,
+                time: performance.now() - startTime,
+                error: true,
+                errorMessage: error.message,
+                fullError: error
+            };
         }
+    };
+
+    const fetchData = async (urls: string[]) => {
+        const allRequests: Promise<void>[] = [];
+
+        urls.forEach((rpcUrl) => {
+            const web3VersionRequest = fetchRpcMethod(rpcUrl, "web3_clientVersion").then((response) => {
+                setData((prevData) =>
+                    prevData.map((entry) =>
+                        entry.rpcUrl === rpcUrl ? { ...entry, web3ClientVersion: response.result || "Unknown" } : entry
+                    )
+                );
+            });
+
+            allRequests.push(web3VersionRequest);
+
+            rpcMethods.forEach((method) => {
+                const request = fetchRpcMethod(rpcUrl, method).then((response) => {
+                    setData((prevData) =>
+                        prevData.map((entry) =>
+                            entry.rpcUrl === rpcUrl
+                                ? {
+                                    ...entry,
+                                    responses: entry.responses.map((r) =>
+                                        r.method === method ? response : r
+                                    )
+                                }
+                                : entry
+                        )
+                    );
+                });
+
+                allRequests.push(request);
+            });
+        });
+
+        await Promise.allSettled(allRequests);
+    };
+
+    // Run once on mount with initial rpcUrls
+    useEffect(() => {
+        if (!initialized.current && rpcUrls.length > 0) {
+            initialized.current = true;
+            fetchData(rpcUrls);
+        }
+    }, []); // Only runs on mount
+
+    // Run when rpcUrls change
+    useEffect(() => {
+        if (!initialized.current) return;
 
         const newRpcUrls = rpcUrls.filter((url) => !prevRpcUrls.current.includes(url));
         const removedRpcUrls = prevRpcUrls.current.filter((url) => !rpcUrls.includes(url));
         prevRpcUrls.current = rpcUrls;
-
-        if (newRpcUrls.length === 0 && removedRpcUrls.length === 0) return;
 
         setData((prevData) => {
             const updatedData = prevData.filter((entry) => !removedRpcUrls.includes(entry.rpcUrl));
@@ -92,91 +176,6 @@ export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
 
             return updatedData;
         });
-
-        const fetchRpcMethod = async (rpcUrl: string, method: string, attempt = 1): Promise<RpcResponse> => {
-            const params = methodParams[method] || [];
-            const requestData = { jsonrpc: "2.0", method, params, id: 1 };
-            const startTime = performance.now();
-
-            try {
-                const response = await fetch(rpcUrl, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(requestData)
-                });
-
-                if (!response.ok) {
-                    if (response.status === 429 && attempt <= MAX_RETRIES) {
-                        const retryAfter = response.headers.get("Retry-After");
-                        const delay = retryAfter ? parseInt(retryAfter, 10) * 1000 : 2000;
-                        await new Promise((resolve) => setTimeout(resolve, delay));
-                        return fetchRpcMethod(rpcUrl, method, attempt + 1);
-                    }
-                    throw new Error(`HTTP ${response.status} ${response.statusText}`);
-                }
-
-                let json;
-                try {
-                    json = await response.json();
-                } catch {
-                    throw new Error("Invalid JSON Response");
-                }
-
-                return {
-                    method,
-                    time: performance.now() - startTime,
-                    result: json.result || null,
-                    error: !!json.error,
-                    errorMessage: json.error?.message || "",
-                    fullError: json.error || null
-                };
-            } catch (error: any) {
-                return {
-                    method,
-                    time: performance.now() - startTime,
-                    error: true,
-                    errorMessage: error.message,
-                    fullError: error
-                };
-            }
-        };
-
-        const fetchData = async (urls: string[]) => {
-            const allRequests: Promise<void>[] = [];
-
-            urls.forEach((rpcUrl) => {
-                const web3VersionRequest = fetchRpcMethod(rpcUrl, "web3_clientVersion").then((response) => {
-                    setData((prevData) =>
-                        prevData.map((entry) =>
-                            entry.rpcUrl === rpcUrl ? { ...entry, web3ClientVersion: response.result || "Unknown" } : entry
-                        )
-                    );
-                });
-
-                allRequests.push(web3VersionRequest);
-
-                rpcMethods.forEach((method) => {
-                    const request = fetchRpcMethod(rpcUrl, method).then((response) => {
-                        setData((prevData) =>
-                            prevData.map((entry) =>
-                                entry.rpcUrl === rpcUrl
-                                    ? {
-                                        ...entry,
-                                        responses: entry.responses.map((r) =>
-                                            r.method === method ? response : r
-                                        )
-                                    }
-                                    : entry
-                            )
-                        );
-                    });
-
-                    allRequests.push(request);
-                });
-            });
-
-            await Promise.allSettled(allRequests);
-        };
 
         fetchData(newRpcUrls);
     }, [rpcUrls]);
