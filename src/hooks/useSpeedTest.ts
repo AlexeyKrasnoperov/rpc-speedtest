@@ -59,7 +59,6 @@ const methodParams: Record<string, any[]> = {
 export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
     const [data, setData] = useState<RpcData[]>([]);
     const prevRpcUrls = useRef<string[]>([]);
-    const initialized = useRef(false);
     const MAX_RETRIES = 5;
 
     const fetchRpcMethod = async (rpcUrl: string, method: string, attempt = 1): Promise<RpcResponse> => {
@@ -142,18 +141,7 @@ export const useSpeedTest = (rpcUrls: string[], rpcMethods: string[]) => {
         await Promise.allSettled(allRequests);
     };
 
-    // Run once on mount with initial rpcUrls
     useEffect(() => {
-        if (!initialized.current && rpcUrls.length > 0) {
-            initialized.current = true;
-            fetchData(rpcUrls);
-        }
-    }, []); // Only runs on mount
-
-    // Run when rpcUrls change
-    useEffect(() => {
-        if (!initialized.current) return;
-
         const newRpcUrls = rpcUrls.filter((url) => !prevRpcUrls.current.includes(url));
         const removedRpcUrls = prevRpcUrls.current.filter((url) => !rpcUrls.includes(url));
         prevRpcUrls.current = rpcUrls;
