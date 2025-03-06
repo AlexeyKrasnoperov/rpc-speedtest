@@ -1,5 +1,7 @@
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from "@mui/material";
 import { RpcData } from "../../hooks/useSpeedTest";
+import "./SpeedTestTable.module.css";
+import { styled } from "@mui/material/styles";
 
 interface SpeedTestTableProps {
   rpcUrls: string[];
@@ -7,13 +9,22 @@ interface SpeedTestTableProps {
   data: RpcData[];
 }
 
-const getCellStyle = (time?: number, error?: boolean) => {
-  if (error) return { backgroundColor: "#ffcccc" }; // Red for errors
-  if (time === undefined) return { backgroundColor: "#f0f0f0" }; // Grey for pending
-  if (time < 100) return { backgroundColor: "#ccffcc" }; // Green for fast
-  if (time < 300) return { backgroundColor: "#ffffcc" }; // Yellow for moderate
-  return { backgroundColor: "#ffcc99" }; // Orange for slow
-};
+interface StyledTableCellProps {
+  time?: number;
+  error?: boolean;
+}
+
+const StyledTableCell = styled(TableCell)<StyledTableCellProps>(({ theme, time, error }) => ({
+  backgroundColor: error
+    ? theme.palette.error.light
+    : time === undefined
+      ? theme.palette.grey[300]
+      : time < 100
+        ? theme.palette.success.light
+        : time < 300
+          ? theme.palette.warning.light
+          : theme.palette.warning.dark,
+}));
 
 export const SpeedTestTable: React.FC<SpeedTestTableProps> = ({ rpcUrls, rpcMethods, data }) => {
   const calculateAverage = (method: string) => {
@@ -43,9 +54,9 @@ export const SpeedTestTable: React.FC<SpeedTestTableProps> = ({ rpcUrls, rpcMeth
       <Table size="small">
         <TableHead>
           <TableRow>
-            <TableCell sx={{ whiteSpace: "nowrap", fontWeight: "bold" }}>Method</TableCell>
+            <TableCell className="header-cell">Method</TableCell>
             {rpcUrls.map((rpcUrl) => (
-              <TableCell key={rpcUrl} title={rpcUrl} align="center" sx={{ whiteSpace: "nowrap", minWidth: "120px" }}>
+              <TableCell key={rpcUrl} title={rpcUrl} align="center" className="header-cell">
                 <Typography variant="body2" fontWeight="bold">
                   {new URL(rpcUrl).hostname}
                 </Typography>
@@ -54,34 +65,37 @@ export const SpeedTestTable: React.FC<SpeedTestTableProps> = ({ rpcUrls, rpcMeth
                 </Typography>
               </TableCell>
             ))}
-            <TableCell sx={{ whiteSpace: "nowrap", fontWeight: "bold" }}>Average</TableCell>
-            <TableCell sx={{ whiteSpace: "nowrap", fontWeight: "bold" }}>Median</TableCell>
+            <TableCell className="header-cell">Average</TableCell>
+            <TableCell className="header-cell">Median</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {rpcMethods.map((method) => (
             <TableRow key={method}>
-              <TableCell sx={{ whiteSpace: "nowrap" }}>{method}</TableCell>
+              <TableCell className="method-cell">{method}</TableCell>
               {rpcUrls.map((rpcUrl) => {
                 const entry = data.find((d) => d.rpcUrl === rpcUrl);
                 const response = entry?.responses.find((r) => r.method === method);
 
                 return (
-                  <TableCell
+                  <StyledTableCell
                     key={rpcUrl}
                     align="center"
-                    sx={{ overflowX: "auto", minWidth: "100px", maxWidth: "200px", ...getCellStyle(response?.time, response?.error) }}
+                    time={response?.time}
+                    error={response?.error}
+                    sx={{ overflowX: "auto", minWidth: "100px", maxWidth: "200px" }}
                   >
+
                     {response?.time === undefined
                       ? "⏳"
                       : response.error
-                      ? `❌ ${response.errorMessage} (${response.time.toFixed(2)} ms)`
-                      : `${response.time.toFixed(2)} ms`}
-                  </TableCell>
+                        ? `❌ ${response.errorMessage} (${response.time.toFixed(2)} ms)`
+                        : `${response.time.toFixed(2)} ms`}
+                  </StyledTableCell>
                 );
               })}
-              <TableCell sx={{ whiteSpace: "nowrap" }}>{calculateAverage(method)}</TableCell>
-              <TableCell sx={{ whiteSpace: "nowrap" }}>{calculateMedian(method)}</TableCell>
+              <TableCell className="average-cell">{calculateAverage(method)}</TableCell>
+              <TableCell className="median-cell">{calculateMedian(method)}</TableCell>
             </TableRow>
           ))}
         </TableBody>
