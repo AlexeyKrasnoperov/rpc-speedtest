@@ -56,7 +56,7 @@ const rpcMethods = [
   "trace_replayBlockTransactions",
   "trace_transaction",
   "trace_filter",
-  
+
   "net_version",
   "net_listening",
   "web3_clientVersion",
@@ -85,9 +85,34 @@ const App = () => {
     );
   };
 
+  const normalizeUrl = (url: string) => {
+    url = url.trim();
+    if (!/^https?:\/\//.test(url)) {
+      url = `http://${url}`;
+    }
+    return url;
+  };
+
+  const isValidUrl = (url: string) => {
+    if (/^(https?:\/\/)?(localhost|\d{1,3}(\.\d{1,3}){3}):\d+$/.test(url)) {
+      return true;
+    }
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const addCustomRpc = () => {
-    if (!customRpcUrls.includes(newCustomRpc) && !defaultRpcUrls.some((n) => n.url === newCustomRpc)) {
-      setCustomRpcUrls((prev) => [...prev, newCustomRpc]);
+    let formattedUrl = normalizeUrl(newCustomRpc);
+    if (!isValidUrl(formattedUrl)) {
+      alert("Invalid RPC URL");
+      return;
+    }
+    if (!customRpcUrls.includes(formattedUrl) && !defaultRpcUrls.some((n) => n.url === formattedUrl)) {
+      setCustomRpcUrls((prev) => [...prev, formattedUrl]);
       setNewCustomRpc("");
     }
   };
@@ -102,7 +127,7 @@ const App = () => {
       <Typography variant="h4" gutterBottom>
         RPC Speed Test
       </Typography>
-      
+
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6">Select Nodes</Typography>
         <Stack direction="row" spacing={1} flexWrap="wrap">
