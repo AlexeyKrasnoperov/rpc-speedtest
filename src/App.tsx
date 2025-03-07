@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
-import { useSpeedTest } from "./hooks/useSpeedTest";
 import { SpeedTestTable } from "./components/SpeedTestTable";
+import { Container, Typography, TextField, Button, Paper, Box, Chip, Stack } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
 import "./styles/App.css";
+import { useSpeedTest } from "./hooks/useSpeedTest";
 
 const defaultRpcUrls = [
   { url: "https://rpc.ankr.com/filecoin", name: "Ankr" },
@@ -9,7 +12,7 @@ const defaultRpcUrls = [
   { url: "https://api.node.glif.io", name: "Glif" },
   { url: "https://filfox.info/rpc/v1", name: "Filfox" },
   { url: "https://filecoin.drpc.org", name: "DRPC" },
-  { url: "https://rpcnode-mainnet.chainsafe-fil.io/rpc/v0", name: "ChainSafe"}
+  { url: "https://rpcnode-mainnet.chainsafe-fil.io/rpc/v0", name: "ChainSafe" },
 ];
 
 const rpcMethods = [
@@ -25,7 +28,6 @@ const rpcMethods = [
   "eth_getBlockReceipts",
   "eth_getTransactionByBlockHashAndIndex",
   "eth_getTransactionByBlockNumberAndIndex",
-
   "eth_getCode",
   "eth_getStorageAt",
   "eth_chainId",
@@ -57,12 +59,13 @@ const rpcMethods = [
 
   "net_version",
   "net_listening",
-  "web3_clientVersion"
+  "web3_clientVersion",
 ];
 
 const App = () => {
   const storedCustomRpcs = JSON.parse(localStorage.getItem("customRpcs") || "[]");
-  const [selectedRpcUrls, setSelectedRpcUrls] = useState<string[]>([]);
+  const storedSelectedRpcs = JSON.parse(localStorage.getItem("selectedRpcs") || "[]");
+  const [selectedRpcUrls, setSelectedRpcUrls] = useState<string[]>(storedSelectedRpcs);
   const [customRpcUrls, setCustomRpcUrls] = useState<string[]>(storedCustomRpcs);
   const [newCustomRpc, setNewCustomRpc] = useState("");
 
@@ -71,6 +74,10 @@ const App = () => {
   useEffect(() => {
     localStorage.setItem("customRpcs", JSON.stringify(customRpcUrls));
   }, [customRpcUrls]);
+
+  useEffect(() => {
+    localStorage.setItem("selectedRpcs", JSON.stringify(selectedRpcUrls));
+  }, [selectedRpcUrls]);
 
   const toggleRpc = (url: string) => {
     setSelectedRpcUrls((prev) =>
@@ -116,54 +123,60 @@ const App = () => {
   };
 
   return (
-    <div className="appContainer">
-      <h1 className="title">RPC Speed Test</h1>
+    <Container maxWidth="xl" sx={{ mt: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        RPC Speed Test
+      </Typography>
 
-      <div className="rpc-selection">
-        <h3>Select Nodes</h3>
-        {defaultRpcUrls.map(({ url, name }) => (
-          <label key={url} className="rpc-option">
-            <input
-              type="checkbox"
-              checked={selectedRpcUrls.includes(url)}
-              onChange={() => toggleRpc(url)}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6">Select Nodes</Typography>
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          {defaultRpcUrls.map(({ url, name }) => (
+            <Chip
+              key={url}
+              label={name}
+              clickable
+              color={selectedRpcUrls.includes(url) ? "success" : "default"}
+              onClick={() => toggleRpc(url)}
             />
-            {name}
-          </label>
-        ))}
+          ))}
+        </Stack>
+      </Paper>
 
-        <h3>Custom Nodes</h3>
-        {customRpcUrls.map((url) => (
-          <div key={url} className="custom-rpc-item">
-            <label className="rpc-option">
-              <input
-                type="checkbox"
-                checked={selectedRpcUrls.includes(url)}
-                onChange={() => toggleRpc(url)}
-              />
-              {url}
-            </label>
-            <button className="remove-btn" onClick={() => removeCustomRpc(url)}>❌</button>
-          </div>
-        ))}
-
-        <div className="add-custom">
-          <input
-            type="text"
-            placeholder="Enter custom RPC"
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6">Custom Nodes</Typography>
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          {customRpcUrls.map((url) => (
+            <Chip
+              key={url}
+              label={url}
+              clickable
+              color={selectedRpcUrls.includes(url) ? "primary" : "default"}
+              onClick={() => toggleRpc(url)}
+              onDelete={() => removeCustomRpc(url)}
+              deleteIcon={<DeleteIcon />}
+            />
+          ))}
+        </Stack>
+        <Box display="flex" gap={1} mt={2}>
+          <TextField
+            fullWidth
+            label="Enter custom RPC"
             value={newCustomRpc}
             onChange={(e) => setNewCustomRpc(e.target.value)}
           />
-          <button onClick={addCustomRpc}>➕</button>
-        </div>
-      </div>
+          <Button variant="contained" onClick={addCustomRpc} startIcon={<AddIcon />}>Add</Button>
+        </Box>
+      </Paper>
 
       {selectedRpcUrls.length > 0 ? (
         <SpeedTestTable rpcUrls={selectedRpcUrls} rpcMethods={rpcMethods} data={data} />
       ) : (
-        <p className="no-nodes">No nodes selected</p>
+        <Typography variant="body1" color="textSecondary" align="center">
+          No nodes selected
+        </Typography>
       )}
-    </div>
+    </Container>
   );
 };
 
